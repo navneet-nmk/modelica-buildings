@@ -13,8 +13,7 @@ model OneZoneWithControl "Validation model for one zone"
     fmuName="bld.fmu",
     zoneName="Zone 1",
     nPorts=2,
-    energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial)
-              "Thermal zone"
+    energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial)  "Thermal zone"
     annotation (Placement(transformation(extent={{20,20},{60,60}})));
   Fluid.FixedResistances.PressureDrop duc(
     allowFlowReversal=false,

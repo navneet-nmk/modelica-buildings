@@ -16,7 +16,7 @@ model OneZone "Validation model for one zone"
     zoneName="Zone 1",
     redeclare package Medium = Medium,
     energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
-    nPorts=2) "Thermal zone"
+    nPorts=2)  "Thermal zone"
     annotation (Placement(transformation(extent={{20,-20},{60,20}})));
   Fluid.FixedResistances.PressureDrop duc(
     allowFlowReversal=false,

@@ -10,19 +10,19 @@ model ThreeZonesTwoBuildings
     zoneName="Zone 1",
     redeclare package Medium = Medium,
     energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
-    fmuName="bld1.fmu") "Thermal zone"
+    fmuName="bld1.fmu")            "Thermal zone"
     annotation (Placement(transformation(extent={{20,40},{60,80}})));
   ThermalZone zon2(
     redeclare package Medium = Medium,
     energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
     zoneName="Zone 2",
-    fmuName="bld1.fmu") "Thermal zone"
+    fmuName="bld1.fmu")            "Thermal zone"
     annotation (Placement(transformation(extent={{20,-20},{60,20}})));
   ThermalZone zon3(
     zoneName="Zone 1",
     redeclare package Medium = Medium,
     energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
-    fmuName="bld2.fmu") "Thermal zone"
+    fmuName="bld2.fmu")            "Thermal zone"
     annotation (Placement(transformation(extent={{20,-84},{60,-44}})));
   Modelica.Blocks.Sources.Constant qConGai_flow(k=0) "Convective heat gain"
     annotation (Placement(transformation(extent={{-80,0},{-60,20}})));

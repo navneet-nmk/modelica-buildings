@@ -17,7 +17,7 @@ model TwoZones "Validation model for two zones"
     fmuName="bld.fmu",
     zoneName="Zone 1",
     redeclare package Medium = Medium,
-    energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial) "Thermal zone"
+    energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial)                                                   "Thermal zone"
     annotation (Placement(transformation(extent={{20,20},{60,60}})));
   ThermalZone zon2(
     fmuName="bld.fmu",

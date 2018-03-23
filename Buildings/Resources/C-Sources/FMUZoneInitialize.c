@@ -7,13 +7,14 @@
 #include "FMUEnergyPlusStructure.h"
 #include <stdlib.h>
 
-void FMUZoneInitialize(void* object, double* AFlo, double* V){
+void FMUZoneInitialize(void* object, double* AFlo, double* V, double* mSenFac){
 /*  char msg[200]; */
 
 /*  FMUZone* zone = (FMUZone*) object; */
 /* Obtain the floor area and the volume of the zone */
   *AFlo = 30;
   *V = 2.7*30;
+  *mSenFac = 1;
 /*  snprintf(msg, 200,
     "*** In exchange for bldg: %s; zone: %s, n = %d, pointer to fmu %p.\n",
     zone->ptrBui->name,

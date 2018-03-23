@@ -6,9 +6,16 @@ extends ExternalObject;
       input String fmuName "Name of the FMU";
       input String zoneName "Name of the thermal zone";
       input Integer nFluPor "Number of fluid ports of zone";
+      input Integer nVarSen "Number of variables sent to EnergyPlus";
+      input String[:] varNamSen "Names of variables sent to EnergyPlus";
+      input Integer[:] valRefVarSen "Value references of variables sent to EnergyPlus";
+      input Integer nVarRec "Number of variables received from EnergyPlus";
+      input String[:] varNamRec "Names of variables received from EnergyPlus";
+      input Integer[:] valRefVarRec "Value references of variables received from EnergyPlus";
       output FMUZoneClass adapter;
 
-      external "C" adapter = FMUZoneInit(fmuName, zoneName, nFluPor)
+      external "C" adapter = FMUZoneInit(fmuName, zoneName, nFluPor,
+        nVarSen, varNamSen, valRefVarSen, nVarRec, varNamRec, valRefVarRec)
       annotation(Include="#include <FMUZoneInit.c>",
       IncludeDirectory="modelica://Buildings/Resources/C-Sources");
 
@@ -21,6 +28,10 @@ will be used to store the data structure needed to communicate with EnergyPlus.
 </p>
 </html>", revisions="<html>
 <ul>
+<li>
+March 21, 2018, by Thierry S. Nouidui:<br/>
+Revised implementation for efficiency.
+</li>
 <li>
 February 14, 2018, by Michael Wetter:<br/>
 First implementation.
@@ -59,6 +70,10 @@ of the data structure needed to communicate with the EnergyPlus FMU.
 </html>",
 revisions="<html>
 <ul>
+<li>
+March 21, 2018, by Thierry S. Nouidui:<br/>
+Revised implementation for efficiency.
+</li>
 <li>
 February 14, 2018, by Michael Wetter:<br/>
 First implementation.

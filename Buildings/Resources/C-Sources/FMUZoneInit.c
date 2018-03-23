@@ -10,8 +10,10 @@
 #include <stdio.h>
 
 /* Create the structure and return a pointer to its address. */
-FMUBuilding* instantiateEnergyPlusFMU(const char* fmuName, const char* zoneName)
+FMUBuilding* instantiateEnergyPlusFMU(const char* fmuName, const char* zoneName, FMUZone* zone)
 {
+  char msg[200];
+
   /* Allocate memory */
   if (Buildings_nFMU == 0){
     Buildings_FMUS = malloc(sizeof(struct FMUBuilding*));
@@ -43,6 +45,12 @@ FMUBuilding* instantiateEnergyPlusFMU(const char* fmuName, const char* zoneName)
 
   Buildings_FMUS[Buildings_nFMU]->nZon = 1;
 
+   /* Assign the zone */
+  Buildings_FMUS[Buildings_nFMU]->zones = zone;
+
+  snprintf(msg, 200, "****** Output value references in zone %s, number = %d ****** \n", ((FMUZone*)(Buildings_FMUS[Buildings_nFMU]->zones))->name, Buildings_nFMU);
+  ModelicaMessage(msg);
+
   Buildings_nFMU++;
   /* Return the pointer to the FMU for this EnergyPlus instance */
   return Buildings_FMUS[Buildings_nFMU-1];
@@ -61,7 +69,9 @@ int zoneIsUnique(const struct FMUBuilding* fmuBld, const char* zoneName){
 }
 
 /* Create the structure and return a pointer to its address. */
-void* FMUZoneInit(const char* fmuName, const char* zoneName, int nFluPor)
+void* FMUZoneInit(const char* fmuName, const char* zoneName, int nFluPor, int nInputValueReferences,
+                  char** inputVariableNames, int* inputValueReferences, int nOutputValueReferences,
+                  char** outputVariableNames, int* outputValueReferences)
 {
   /* Note: The fmuName is needed to unpack the fmu so that the valueReference
      for the zone with zoneName can be obtained */
@@ -77,6 +87,8 @@ void* FMUZoneInit(const char* fmuName, const char* zoneName, int nFluPor)
   if ( zone == NULL )
     ModelicaError("Not enough memory in FMUZoneInit.c. to allocate zone.");
   zone->valueReference = NULL;
+  zone->inputValueReferences = NULL;
+  zone->outputValueReferences = NULL;
 
   zone->valueReference = malloc(nFluPor * sizeof(unsigned int));
   if ( zone->valueReference == NULL )
@@ -94,13 +106,61 @@ void* FMUZoneInit(const char* fmuName, const char* zoneName, int nFluPor)
     ModelicaError("Not enough memory in FMUZoneInit.c. to allocate zone name.");
   strcpy(zone->name, zoneName);
 
+
+ /* Allocate memory for the output names and value references */
+  zone->inputVariableNames = malloc(nInputValueReferences * sizeof(char *));
+  if ( zone->inputVariableNames == NULL )
+    ModelicaError("Not enough memory in FMUZoneInit.c. to allocate inputVariableNames.");
+  
+  zone->inputValueReferences = malloc(nInputValueReferences * sizeof(unsigned int));
+  if ( zone->inputValueReferences == NULL )
+    ModelicaError("Not enough memory in FMUZoneInit.c. to allocate inputValueReferences.");
+  zone->nInputValueReferences = nInputValueReferences; 
+
+  /* Assign the output names and value references*/
+  for(i = 0; i < nInputValueReferences; i++){
+    zone->inputValueReferences[i] = inputValueReferences[i];
+    zone->inputVariableNames[i] = malloc(strlen(inputVariableNames[i]) * sizeof(char));
+    strcpy (zone->inputVariableNames[i], inputVariableNames[i]);
+  }
+
+  //snprintf(msg, 200, "****** Input value references in zone %s, fmu = %s, inputValueReferences = %d ****** \n", zoneName, fmuName, zone->inputValueReferences[0]);
+  //ModelicaMessage(msg);
+
+  //snprintf(msg, 200, "****** Input value references in zone %s, fmu = %s, inputValueReferences = %s ****** \n", zoneName, fmuName, inputVariableNames[0]);
+  //ModelicaMessage(msg);
+
+
+ /* Allocate memory for the output names and value references */
+  zone->outputVariableNames = malloc(nOutputValueReferences * sizeof(char *));
+  if ( zone->outputVariableNames == NULL )
+    ModelicaError("Not enough memory in FMUZoneInit.c. to allocate outputVariableNames.");
+  
+  zone->outputValueReferences = malloc(nOutputValueReferences * sizeof(unsigned int));
+  if ( zone->outputValueReferences == NULL )
+    ModelicaError("Not enough memory in FMUZoneInit.c. to allocate outputValueReferences.");
+  zone->nOutputValueReferences = nOutputValueReferences; 
+
+  /* Assign the output names and value references*/
+  for(i = 0; i < nOutputValueReferences; i++){
+    zone->outputValueReferences[i] = outputValueReferences[i];
+    zone->outputVariableNames[i] = malloc(strlen(outputVariableNames[i]) * sizeof(char));
+    strcpy (zone->outputVariableNames[i], outputVariableNames[i]);
+  }
+
+  //snprintf(msg, 200, "****** Output value references in zone %s, fmu = %s, outputValueReferences = %d ****** \n", zoneName, fmuName, zone->outputValueReferences[0]);
+  //ModelicaMessage(msg);
+
+  //snprintf(msg, 200, "****** Output value references in zone %s, fmu = %s, outputValueReferences = %s ****** \n", zoneName, fmuName, outputVariableNames[0]);
+  //ModelicaMessage(msg);
+
   /* ********************************************************************** */
   /* Initialize the pointer for the FMU to which this zone belongs */
   /* Check if there are any zones */
   if (Buildings_nFMU == 0){
     /* No FMUs exist. Instantiate an FMU and */
     /* assign this fmu pointer to the zone that will invoke its setXXX and getXXX */
-    zone->ptrBui = instantiateEnergyPlusFMU(fmuName, zoneName);
+    zone->ptrBui = instantiateEnergyPlusFMU(fmuName, zoneName, zone);
   } else {
     /* There is already a Buildings FMU allocated.
        Check if the current zone is for this FMU. */
@@ -134,7 +194,7 @@ void* FMUZoneInit(const char* fmuName, const char* zoneName, int nFluPor)
       /* Check if we found an FMU */
       if (zone->ptrBui == NULL){
         /* Did not find an FMU. */
-        zone->ptrBui = instantiateEnergyPlusFMU(fmuName, zoneName);
+        zone->ptrBui = instantiateEnergyPlusFMU(fmuName, zoneName, zone);
       }
   }
   /* Return a pointer to this zone */
