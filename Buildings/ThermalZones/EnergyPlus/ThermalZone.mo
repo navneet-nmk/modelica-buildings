@@ -3,6 +3,7 @@ model ThermalZone "Model to connect to an EnergyPlus thermal zone"
   extends Modelica.Blocks.Icons.Block;
   parameter String idfName="" "Name of the IDF file that contains this zone";
   parameter String weaName="" "Name of the EnergyPlus weather file";
+  parameter String instanceName=idfName "Unique name to identify a building";
 
   parameter String zoneName "Name of the thermal zone as specified in the EnergyPlus input";
   parameter Integer nPorts=0 "Number of fluid ports (equals to 2 for one inlet and one outlet)" annotation (Evaluate=true,
@@ -113,6 +114,7 @@ protected
     V*3/3600 "Nominal mass flow rate (used for regularization)";
   Buildings.ThermalZones.EnergyPlus.BaseClasses.FMUZoneAdapter fmuZon(
     final idfName=idfName,
+    final instanceName=instanceName,
     final weaName=weaName,
     final zoneName=zoneName,
     final nFluPor=nPorts) "FMU zone adapter"

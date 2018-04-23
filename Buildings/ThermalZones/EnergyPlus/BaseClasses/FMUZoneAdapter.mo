@@ -4,12 +4,20 @@ block FMUZoneAdapter "Block that interacts with this EnergyPlus zone"
 
   parameter String idfName "Name of the IDF file that contains this zone";
   parameter String weaName "Name of the Energyplus weather file";
+  parameter String instanceName "Unique name to identify a building";
   final parameter String iddName=Modelica.Utilities.Files.loadResource(
-    "modelica://Buildings/Resources/Data/Rooms/EnergyPlus/Energy+.idd")
+    "modelica://Buildings/Resources/Library/EnergyPlus/v870/Energy+.idd")
     "Name of the Energyplus IDD file";
-  final parameter String epLibName=Modelica.Utilities.Files.loadResource(
-    "modelica://Buildings/Resources/Data/Rooms/EnergyPlus/libepfmi.so")
-    "Name of the EnergyPlus FMI library";
+  final parameter Integer osVal=
+      Buildings.ThermalZones.EnergyPlus.BaseClasses.detectOperatingSystem()
+    "Operating system flag";
+  final parameter String epLibName=(if (osVal == 0) then
+      Modelica.Utilities.Files.loadResource("modelica://Buildings/Resources/Library/EnergyPlus/v870/win64/libepfmi.so")
+       elseif (osVal == 1) then Modelica.Utilities.Files.loadResource("modelica://Buildings/Resources/Library/EnergyPlus/v870/win32/libepfmi.so")
+       elseif (osVal == 2) then Modelica.Utilities.Files.loadResource("modelica://Buildings/Resources/Library/EnergyPlus/v870/linux64/libepfmi.so")
+       elseif (osVal == 3) then Modelica.Utilities.Files.loadResource("modelica://Buildings/Resources/Library/EnergyPlus/v870/linux32/libepfmi.so")
+       else "") "Path to the FFD libraries";
+
   parameter String zoneName
     "Name of the thermal zone as specified in the EnergyPlus input";
   parameter Integer nFluPor
@@ -71,10 +79,11 @@ protected
   Buildings.ThermalZones.EnergyPlus.BaseClasses.FMUZoneClass adapter=
       Buildings.ThermalZones.EnergyPlus.BaseClasses.FMUZoneClass(
       idfName=idfName,
+      instanceName=instanceName,
       weaName=weaName,
       iddName=iddName,
-      epLibName=epLibName,
-      zoneName=zoneName)
+      zoneName=zoneName,
+      epLibName=epLibName)
         "Class to communicate with EnergyPlus";
 
   parameter Modelica.SIunits.Time t0(fixed=false) "Simulation start time";
@@ -96,7 +105,7 @@ protected
 
 initial equation
   t0 = time;
-  (AFlo, V, mSenFac) = Buildings.ThermalZones.EnergyPlus.BaseClasses.initialize(adapter);
+  (AFlo, V, mSenFac) = Buildings.ThermalZones.EnergyPlus.BaseClasses.initialize(adapter, t0);
   T0 = T;
 equation
   when {initial(), time >= pre(tNext)} then

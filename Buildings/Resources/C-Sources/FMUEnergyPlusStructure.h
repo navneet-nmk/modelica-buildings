@@ -7,12 +7,20 @@
 
 #include <stddef.h>  /* stddef defines size_t */
 #include<fmi2FunctionTypes.h>
+//#include <EPFMI.hpp>
 
 // Use windows.h only for Windows
 #ifdef _WIN32
 #include <windows.h>
+#include <direct.h>
+#define PATH_SEP "\\"
 #define WINDOWS 1
+#define HANDLE HINSTANCE
 #else
+#include <sys/stat.h>
+#include <unistd.h>
+#include <libgen.h>
+#define PATH_SEP "/"
 #define WINDOWS 0
 #define HANDLE void *
 /* See http://www.yolinux.com/TUTORIALS/LibraryArchives-StaticAndDynamic.html */
@@ -69,6 +77,7 @@ typedef struct FMU{
 	fGetVariables getVariables;
 	fGetNextEventTime getNextEventTime;
 	fTerminate terminate;
+  fmi2EventInfo eventInfo;
 } FMU;
 
 typedef struct FMUBuilding
@@ -77,7 +86,10 @@ typedef struct FMUBuilding
   fmi2Byte* name;
   fmi2Byte* weather;
   fmi2Byte* idd;
-  fmi2Byte* epLib;
+  fmi2Byte* instanceName;
+  fmi2Byte* epLibName;
+  fmi2Byte cwd[1024];
+  fmi2Byte* outputs;
   fmi2Integer nZon; /* Number of zones that use this FMU */
   fmi2Byte** zoneNames; /* Names of zones in this FMU */
   void** zones; /* Pointers to all zones*/

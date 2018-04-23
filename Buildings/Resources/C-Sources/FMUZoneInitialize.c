@@ -7,6 +7,7 @@
 
 #include "FMUEnergyPlusStructure.h"
 #include <stdlib.h>
+extern void *dlmopen (long int __nsid, const char*, int);
 
 static void* getAdr(FMU *fmu, const char* functionName){
 	void* fp;
@@ -16,6 +17,7 @@ static void* getAdr(FMU *fmu, const char* functionName){
 	fp = dlsym(fmu->dllHandle, functionName);
 #endif
 	if (!fp) {
+
 		ModelicaFormatError("****** Function %s,  not "
 		"found in the EnergyPlus functions library****** \n",
 		functionName);
@@ -24,11 +26,7 @@ static void* getAdr(FMU *fmu, const char* functionName){
 }
 
 static int loadLib(const char* libPath, FMU *fmu) {
-#ifdef _MSC_VER
-	HINSTANCE h;
-#else
-	void *h;
-#endif
+HANDLE h;
 
 #ifdef _MSC_VER
 	h = LoadLibrary(libPath);
@@ -39,6 +37,7 @@ static int loadLib(const char* libPath, FMU *fmu) {
 	}
 #else
 	h = dlopen(libPath, RTLD_LAZY);
+	/*h=dlmopen(-1, libPath, RTLD_LAZY | RTLD_LOCAL | RTLD_DEEPBIND);*/
 	if (!h) {
 		ModelicaFormatError("****** Unable to load the EnergyPlus "
 		"functions library with path %s ****** \n",
@@ -85,7 +84,7 @@ static int loadLib(const char* libPath, FMU *fmu) {
 
 }
 
-void FMUZoneInitialize(void* object, double* AFlo, double* V, double* mSenFac){
+void FMUZoneInitialize(void* object, double tStart, double* AFlo, double* V, double* mSenFac){
   fmi2Byte msg[200];
   FMUZone* zone = (FMUZone*) object;
 	/* Prevent this to be called multiple times */
@@ -104,8 +103,8 @@ void FMUZoneInitialize(void* object, double* AFlo, double* V, double* mSenFac){
 	int nInp = scaInp*nZon;
 	int nOut = scaOut*nZon;
 
-	const char** inputNames=(char**)malloc(nInp*sizeof(char*));
-	const char** outputNames=(char**)malloc(nOut*sizeof(char*));
+	char** inputNames=(char**)malloc(nInp*sizeof(char*));
+	char** outputNames=(char**)malloc(nOut*sizeof(char*));
 	fmi2ValueReference inputValueReferences [nInp];
 	fmi2ValueReference outputValueReferences [nOut];
 
@@ -174,46 +173,57 @@ void FMUZoneInitialize(void* object, double* AFlo, double* V, double* mSenFac){
 	totNumInp=sizeof(inputValueReferences)/sizeof(inputValueReferences[0]);
 	/* Compute the total number of output variables of the building model */
 	totNumOut=sizeof(outputValueReferences)/sizeof(outputValueReferences[0]);
-  result = loadLib(zone->ptrBui->epLib, zone->ptrBui->fmu);
 
+  /*
+	#ifdef _MSC_VER
+	result=_chdir(zone->ptrBui->outputs);
+	#else
+	result=chdir(zone->ptrBui->outputs);
+  #endif
+	if(result<0){
+		ModelicaFormatError("Couldn't change to the output directory %s "
+		"for building = %s\n",
+		zone->ptrBui->outputs, zone->ptrBui->name);
+	}
+  */
+	result = loadLib(zone->ptrBui->epLibName, zone->ptrBui->fmu);
+	//result = loadLib("/home/thierry/TestCase/libepfmi.so", zone->ptrBui->fmu);
 	/* Instantiate the building FMU*/
-	result = zone->ptrBui->fmu->instantiate(zone->ptrBui->name, /* input */
-	                           zone->ptrBui->weather,  /* weather */
-	                           zone->ptrBui->idd,  /* idd */
-	                           "Alpha",  /* instanceName */
-	                           NULL,  /* parameterNames */
-	                           NULL, /* parameterValueReferences[] */
-	                           0, /* nPar */
-	                           inputNames, /* inputNames */
-	                           inputValueReferences, /* inputValueReferences[] */
-	                           totNumInp, /* nInp */
-	                           outputNames, /* outputNames */
-	                           outputValueReferences, /* outputValueReferences[] */
-	                           totNumOut, /* nOut */
-	                           NULL); /*log); */
+	result = zone->ptrBui->fmu->instantiate(((const char*)zone->ptrBui->name), /* input */
+	                      (const char*)zone->ptrBui->weather,  /* weather */
+	                      (const char*)zone->ptrBui->idd,  /* idd */
+                         "Alpha",  /* instanceName */
+                         NULL,  /* parameterNames */
+                         NULL, /* parameterValueReferences[] */
+                         0, /* nPar */
+                         (const char**)inputNames, /* inputNames */
+                         inputValueReferences, /* inputValueReferences[] */
+                         totNumInp, /* nInp */
+                         (const char**)outputNames, /* outputNames */
+                         outputValueReferences, /* outputValueReferences[] */
+                         totNumOut, /* nOut */
+                         NULL); /*log); */
 
 	if(result<0){
-		ModelicaFormatError("Couldn't instantiate building FMU with name %s\n",
+		ModelicaFormatError("Couldn't instantiate building = %s\n",
 		zone->ptrBui->name);
 	}
 
-	 double tStart = 0.0;
-	 int index;
-
+	int index;
 	if (zone->ptrBui->_firstCall){
-		/* This function can only be called once per building FMU */
-		result = zone->ptrBui->fmu->setupExperiment(tStart, 1, NULL);
-		if(result<0){
-			ModelicaFormatError("Failed to get setup experiment for building FMU with name %s\n",
-			zone->ptrBui->name);
-		}
-	}
-
+	/* This function can only be called once per building FMU */
+ 	/* change the directory to make sure that FMUs are not overwritten */
+	result = zone->ptrBui->fmu->setupExperiment(tStart, 1, NULL);
+	if(result<0){
+		ModelicaFormatError("Failed to get setup experiment for building = %s\n",
+	zone->ptrBui->name);
+  }
+  }
 	double outputs[totNumOut] ;
 	/* Get initial output variables */
 	result = zone->ptrBui->fmu->getVariables(outputValueReferences, outputs, totNumOut, NULL);
 	if(result<0){
-		ModelicaFormatError("Failed to get initial outputs for building FMU with name %s\n",
+		ModelicaFormatError("Failed to get initial outputs for building = %s\n",
 		zone->ptrBui->name);
 	}
 
@@ -236,6 +246,19 @@ void FMUZoneInitialize(void* object, double* AFlo, double* V, double* mSenFac){
 	*V = parValues[0];
 	*AFlo = parValues[1];
 	*mSenFac = parValues[2];
+
+  /*
+	#ifdef _MSC_VER
+	result=_chdir(zone->ptrBui->cwd);
+	#else
+	result=chdir(zone->ptrBui->cwd);
+	#endif
+	if(result<0){
+		ModelicaFormatError("Couldn't change to the default working folder=%s "
+		"for building = %s\n",
+		zone->ptrBui->cwd, zone->ptrBui->name);
+	}
+  */
 /* Obtain the floor area and the volume of the zone */
 
 /*  snprintf(msg, 200,

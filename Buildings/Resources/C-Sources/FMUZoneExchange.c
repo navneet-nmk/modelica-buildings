@@ -20,12 +20,12 @@ void setGetVariables(
   {
     int result = fmuZon->ptrBui->fmu->setVariables(inputValueReferences, inputValues, nInp, NULL);
     if(result < 0){
-      ModelicaFormatError("Failed to set setup variables for building FMU with name %s\n",
+      ModelicaFormatError("Failed to set setup variables for building = %s\n",
       fmuZon->ptrBui->name);
     }
     result = fmuZon->ptrBui->fmu->getVariables(outputValueReferences, outputValues, 1, NULL);
     if(result < 0){
-      ModelicaFormatError("Failed to get setup variables for building FMU with name %s\n",
+      ModelicaFormatError("Failed to get setup variables for building = %s\n",
       fmuZon->ptrBui->name);
     }
   }
@@ -48,7 +48,6 @@ void FMUZoneExchange(
   FMUZone* zone = (FMUZone*) object;
   double inputValues[1];
   double outputValues[1];
-  fmi2EventInfo eventInfo;
   int result;
 
   /* Emulate heat transfer to a surface at constant T=18 degC */
@@ -61,9 +60,23 @@ void FMUZoneExchange(
   tmpZon=(FMUZone*)zone->ptrBui->zones[zone->index-1];
   /* Time need to be guarded against rounding error */
   /* *tNext = round((floor(time/3600.0)+1) * 3600.0); */
+
+  /*
+	#ifdef _MSC_VER
+	result=_chdir(zone->ptrBui->outputs);
+	#else
+	result=chdir(zone->ptrBui->outputs);
+  #endif
+	if(result<0){
+		ModelicaFormatError("Couldn't change to the output directory %s "
+    "for building = %s\n",
+		zone->ptrBui->outputs, zone->ptrBui->name);
+	}
+  */
+
   result=zone->ptrBui->fmu->setTime(time, NULL);
   if(result<0){
-    ModelicaFormatError("Failed to set time in building FMU with name %s\n",
+    ModelicaFormatError("Failed to set time in building = %s\n",
     zone->ptrBui->name);
   }
 
@@ -77,25 +90,20 @@ void FMUZoneExchange(
   *dQConSen_flow = (QConSenPer_flow-*QConSen_flow)/dT;
 
   /* Get next event time */
-  result = zone->ptrBui->fmu->getNextEventTime(&eventInfo, NULL);
+  result = zone->ptrBui->fmu->getNextEventTime(&zone->ptrBui->fmu->eventInfo, NULL);
   if(result<0){
-    ModelicaFormatError("Failed to get next event time for building FMU with name %s\n",
-    zone->ptrBui->name);
+    ModelicaFormatError("Failed to get next event time for building = %s, zone = %s, time = %f",
+    zone->ptrBui->name, zone->name, time);
   }
-  if(eventInfo.terminateSimulation == fmi2True){
+  if(zone->ptrBui->fmu->eventInfo.terminateSimulation == fmi2True){
     ModelicaFormatError("EnergyPlus requested to terminate the simulation for building = %s, zone = %s, time = %f",
     zone->ptrBui->name, zone->name, time);
   }
-  if(eventInfo.nextEventTimeDefined == fmi2False){
+  if(zone->ptrBui->fmu->eventInfo.nextEventTimeDefined == fmi2False){
     ModelicaFormatError("EnergyPlus failed to declare the next event time for building = %s, zone = %s, time = %f. Check with support.",
     zone->ptrBui->name, zone->name, time);
   }
-  *tNext = eventInfo.nextEventTime;
-  /* result = zone->ptrBui->fmu->setTime(*tNext, NULL); */
-  if(result<0){
-    ModelicaFormatError("Failed to set time for building FMU with name %s\n",
-    zone->ptrBui->name);
-  }
+  *tNext = zone->ptrBui->fmu->eventInfo.nextEventTime;
 /*
   ModelicaFormatMessage("*** In exchange for bldg: %s; zone: %s, time = %f, tNext = %f, pointer to fmu %p.\n",
    zone->ptrBui->name,
@@ -104,6 +112,18 @@ void FMUZoneExchange(
    *tNext,
    zone->ptrBui);
 */
+  /*
+  #ifdef _MSC_VER
+  result=_chdir(zone->ptrBui->cwd);
+  #else
+  result=chdir(zone->ptrBui->cwd);
+  #endif
+  if(result<0){
+    ModelicaFormatError("Couldn't change to the default working folder=%s "
+    "for building = %s\n",
+    zone->ptrBui->cwd, zone->ptrBui->name);
+  }
+  */
   *TRad = 293.15;
   *QLat_flow = 0;
   *QPeo_flow = 0;

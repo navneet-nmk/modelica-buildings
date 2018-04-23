@@ -4,17 +4,19 @@ extends ExternalObject;
   function constructor
     "Construct to connect to a thermal zone in EnergyPlus"
     input String idfName "Name of the IDF";
+    input String instanceName "Unique name to identify a building";
     input String weaName "Name of the weather file";
     input String iddName "Name of the IDD file";
-    input String epLibName "Name of the Energyplus FMI library";
     input String zoneName "Name of the thermal zone";
+    input String epLibName "Path to the EnergyPlus library";
     output FMUZoneClass adapter;
      external"C" adapter = FMUZoneInit(
            idfName,
+           instanceName,
            weaName,
            iddName,
-           epLibName,
-           zoneName) annotation (Include="#include <FMUZoneInit.c>",
+           zoneName,
+           epLibName) annotation (Include="#include <FMUZoneInit.c>",
            IncludeDirectory="modelica://Buildings/Resources/C-Sources");
     annotation (Documentation(info="<html>
 <p>

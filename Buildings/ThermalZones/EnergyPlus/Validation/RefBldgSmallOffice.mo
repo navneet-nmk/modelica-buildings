@@ -1,5 +1,5 @@
 within Buildings.ThermalZones.EnergyPlus.Validation;
-model RefBldgSmallOffice "Validation model for six zones small office building"
+model RefBldgSmallOffice "Validation model for the six zones small office building"
   extends Modelica.Icons.Example;
   package Medium = Buildings.Media.Air "Medium model";
 
